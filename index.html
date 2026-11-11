@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turning API JSON into a readable report: tables for records, lists for nesting</title>
+<meta name="description" content="How to turn JSON from an API or database export into Markdown people can read: when to use a table, when to use a nested list, escaping pipes and null values.">
+<meta name="robots" content="index,follow">
+<style>body{font:16px/1.6 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:760px;margin:0 auto;padding:32px 20px;color:#1f2328}header{border-bottom:1px solid #d0d7de;margin-bottom:24px}h1{font-size:28px}h2{border-bottom:1px solid #eaeef2;padding-bottom:4px;margin-top:28px}code{background:#eff1f3;padding:2px 5px;border-radius:4px;font-size:90%}pre{background:#f6f8fa;padding:14px;border-radius:6px;overflow:auto}table{border-collapse:collapse;margin:12px 0}td,th{border:1px solid #d0d7de;padding:6px 12px}a{color:#0969da}footer{margin-top:40px;color:#59636e;font-size:14px}</style></head>
+<body><header><h1>Turning API JSON into a readable report: tables for records, lists for nesting</h1></header>
+<main>
+<p>You have a JSON response, such as test results, a list of tickets or an export from a database, and someone who doesn't read JSON needs to see it in a PR description, a status update or a wiki page. The right Markdown shape depends on the shape of the JSON, and that is where most quick conversions go wrong.</p>
+<h2>Rule 1: Flat records become a table</h2>
+<p>An array of objects that share the same keys is really a spreadsheet:</p>
+<pre><code>[{"id": 1, "status": "passed", "ms": 120},
+ {"id": 2, "status": "failed", "ms": 980}]</code></pre>
+<p>That becomes a table with columns <code>id | status | ms</code>. Missing keys become empty cells, not shifted columns.</p>
+<h2>Rule 2: Nested data becomes an indented list</h2>
+<p>Configuration objects, trees and anything with objects inside objects doesn't fit a grid. Squashing it into a table cell (<code>{"a":{"b":1}}</code>) helps nobody. An indented bullet list that mirrors the nesting keeps it readable.</p>
+<p>The <a href="https://dochost.io/json-to-markdown">JSON to Markdown converter</a> on dochost applies exactly these two rules automatically. It escapes pipe characters, keeps nulls visible and runs in the browser, so nothing is uploaded.</p>
+<h2>Details that matter in a report</h2>
+<ul>
+<li><strong>Nulls</strong>: show them as <code>null</code> or a dash. An empty cell is ambiguous: was the value missing, or empty?</li>
+<li><strong>Pipes in strings</strong>: an unescaped <code>|</code> breaks the table. It has to become <code>\|</code>.</li>
+<li><strong>Long strings</strong>: truncate stack traces and link to the full log.</li>
+<li><strong>Column order</strong>: put the identifying column first and the status second. Readers scan from the left.</li>
+</ul>
+<h2>Trim before you convert</h2>
+<p>Use <code>jq</code> to keep only the fields the reader needs, for example <code>jq '[.[] | {id, status, duration_ms}]' results.json</code>. A five-column table gets read. A 30-column table gets skipped.</p>
+<h2>When the audience wants a spreadsheet</h2>
+<p>Finance and ops people often want to sort and filter. Once the data is a Markdown table, <a href="https://dochost.io/markdown-to-excel">Markdown to Excel</a> turns it into a real .xlsx file they can open directly.</p>
+<h2>Template for a weekly status post</h2>
+<pre><code>## Build health (week 45)
+Summary sentence with the one number that matters.
+
+| job | status | p95 ms |
+|-----|--------|-------:|
+| ... | ...    |    ... |
+
+Notes: anything the table can't say.</code></pre>
+</main>
+<footer>Practical notes on document formats. Last updated November 2026. Tools mentioned are free browser tools from dochost.</footer>
+</body></html>
